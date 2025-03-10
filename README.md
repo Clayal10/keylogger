@@ -5,10 +5,12 @@ This is a kernel module for logging potential passwords by analyzing all keystro
 To use this module, run the following in the src/ directory:
 ```bash
 make
-sudo insmod main.ko
+sudo insmod keylog.ko
 ```
 To remove it:
 ```bash
 sudo rmmod keylog
 make clean
 ```
+>Note: this is for educational purposes and not to be used
+>for nefarious means.
