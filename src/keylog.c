@@ -77,17 +77,20 @@ void push(struct password** head, char* password_value){
 void ll_destructor(struct password** head){
 	struct password* next;
 	struct password* curr;
-	
+	int i;
+
 	if(*head == NULL){
 		return;
 	}
 
 	curr = *head;
-	while(curr != NULL){
-		next = curr->next;
-		kfree(curr);
-		curr = next;
-	}
+	for(i=0; i<100; i++){
+                next = curr->next;
+                kfree(curr);
+                if(next != NULL){
+                        curr = next;
+                }
+        }
 }
 
 
