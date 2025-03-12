@@ -22,7 +22,7 @@ static char *keymap[][2] = {
 	{"3", "#"}, {"4", "$"}, {"5", "%"}, {"6", "^"},                 // 4-7
 	{"7", "&"}, {"8", "*"}, {"9", "("}, {"0", ")"},                 // 8-11
 	{"-", "_"}, {"=", "+"}, {"_BACKSPACE_", "_BACKSPACE_"},         // 12-14
-	{"_TAB_", "_TAB_"}, {"q", "Q"}, {"w", "W"}, {"e", "E"}, {"r", "R"},
+	{"\t", "\t"}, {"q", "Q"}, {"w", "W"}, {"e", "E"}, {"r", "R"},
 	{"t", "T"}, {"y", "Y"}, {"u", "U"}, {"i", "I"},                 // 20-23
 	{"o", "O"}, {"p", "P"}, {"[", "{"}, {"]", "}"},                 // 24-27
 	{"\n", "\n"}, {"_LCTRL_", "_LCTRL_"}, {"a", "A"}, {"s", "S"},   // 28-31
@@ -61,7 +61,7 @@ int init (void);
 void cleanup(void);
 
 struct password{//27 byte struct
-	char* pw; // The passwords won't be longer than 15 characters
+	char pw[15]; // The passwords won't be longer than 15 characters
 	int overwrite_num;
 	struct password* next;
 };

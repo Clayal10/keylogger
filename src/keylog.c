@@ -36,7 +36,7 @@ void push(struct password** head, char* password_value){
 	if(!overwrite){
 		// Use kfree on this bad boy
 		new_node = (struct password*)kmalloc(sizeof(struct password), GFP_KERNEL);
-		new_node->pw = password_value;
+		new_node->pw[0] = password_value[0]; // TODO fix this assigment
 		new_node->overwrite_num = 1;
 	        new_node->next = NULL;
         
@@ -60,7 +60,7 @@ void push(struct password** head, char* password_value){
 		// Iterate until we find the next node for overwriting
 		curr = *head;
 		if(password_count % 100 == 1){ // Should be at head again.
-			curr->pw = password_value;
+			curr->pw[0] = password_value[0];
 			curr->overwrite_num++;
 			return;
 		}
@@ -68,7 +68,7 @@ void push(struct password** head, char* password_value){
 			curr = curr->next;
 		} // Brings curr to the last written node before this push call
 
-		curr->next->pw = password_value;
+		curr->next->pw[0] = password_value[0];
 		curr->next->overwrite_num++;
 	}
 
