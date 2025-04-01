@@ -138,7 +138,7 @@ ssize_t read_password(struct file *filp, char *buf, size_t count, loff_t *offp )
 	}
 	struct password* curr = HEAD;
        	while(curr != NULL){
-		comp += snprintf(buf + comp, count - comp, "%s\n", curr->pw);
+		printk("%s\n", curr->pw);
 		if(curr->next == NULL) break;
 		curr = curr->next;
 	}
