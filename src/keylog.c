@@ -132,18 +132,14 @@ void check_pw(char* pw, int len){
 
 
 ssize_t read_password(struct file *filp, char *buf, size_t count, loff_t *offp ) {
-	int i;
 	size_t comp = 0;
 	if(HEAD == NULL){
 		return 0;
 	}
 	struct password* curr = HEAD;
-	i = 0;
-       	for(; i<100; i++){
+       	while(curr != NULL){
 		comp += snprintf(buf + comp, count - comp, "%s\n", curr->pw);
-		if(!curr->next){ // Read the last one
-			break;
-		}
+		if(curr->next == NULL) break;
 		curr = curr->next;
 	}
 
