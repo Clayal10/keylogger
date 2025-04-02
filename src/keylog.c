@@ -12,7 +12,8 @@
 #include "helper.h"
 
 #define CLEAR_BUFFER(x, len) \
-	for(int i=0; i<len; i++) { \
+	int i; \
+	for(i=0; i<len; i++) { \
 		x[i] = '\0'; \
 	} \
 
