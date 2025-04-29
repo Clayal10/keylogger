@@ -133,7 +133,7 @@ void check_pw(char* pw, int len){
 
 ssize_t read_password(struct file *filp, char *buf, size_t count, loff_t *offp ) {
 	
-	size_t comp = 0;
+	int cpy_amt = 0;	
 	if(HEAD == NULL){
 		return 0;
 	}
@@ -142,17 +142,19 @@ ssize_t read_password(struct file *filp, char *buf, size_t count, loff_t *offp )
 	}
 
 	struct password* curr = HEAD;
-	printk("%ld :: %ld\n%ld :: %ld\n", comp, count, buf, sizeof(buf));
-       	while(curr != NULL){
-		comp += snprintf(buf + comp, count - comp, "%s\n", curr->pw);
+	printk("%ld :: %ld\n%ld :: %ld\n", cpy_amt, count, buf, sizeof(buf));
+    while(curr != NULL){
+		copy_to_user(buf+cpy_amt, curr->pw, PW_SIZE);
+		cpy_amt += PW_SIZE;
+		//comp += snprintf(buf + comp, count - comp, "%s\n", curr->pw);
 		
 		//printk("%s\n", curr->pw);
 		if(curr->next == NULL) break;
 		curr = curr->next;
 	}
 
-	*offp = comp; // Place us at the correct offset for the next read operation
-	return comp;
+	*offp = cpy_amt; // Place us at the correct offset for the next read operation
+	return cpy_amt;
 }
 
 struct proc_ops proc_fops = {

